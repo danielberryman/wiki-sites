@@ -61,7 +61,20 @@ function App() {
   const [state, setState] = useState<{
     components: { [key: string]: any }
   }>({
-    components: {},
+    components: {
+      root: {
+        config: {
+          component: '',
+          controls: {},
+          css: {
+            child: {},
+            parent: {},
+          },
+          name: 'root',
+        },
+        position: 1,
+      }
+    },
   });
   const [componentBeingEdited, setComponentBeingEdited] = useState("");
   const [componentBeingEditedCssProps, setComponentBeingEditedCssProps] = useState<any[]>([]);
@@ -71,9 +84,9 @@ function App() {
 
   useEffect(() => {
     console.log("state: ", state);
-  }, [state]);
+  }, [state]) 
 
-  useEffect(() => {
+  useEffect(() => {    
     if (state.components[componentBeingEdited]) {
       console.log("componentBeingEdited: ", state.components[componentBeingEdited]);
       const cssKeys = Object.keys(state.components[componentBeingEdited].config.css.parent);
@@ -101,7 +114,9 @@ function App() {
   const addComponentToJson = () => {
     const json = JSON.parse(importedJsonString);
     Object.keys(json).map((k) => {
-      json[k].config.component = componentDatabase[json[k].config.name].component;
+      if (k !== 'root') {
+        json[k].config.component = componentDatabase[json[k].config.name].component;
+      }
     });
     return json;
   }
@@ -200,9 +215,7 @@ function App() {
                     case 'clear':
                       break;
                   }
-
                   setComponentBeingEditedCssProps(newCssProps);
-
                 }}
               />
             </div>
@@ -214,7 +227,7 @@ function App() {
         style={{ display: 'grid', gridTemplateColumns: '1fr 4fr' }}
       >
         {componentBeingEdited ? (
-          <div style={{ backgroundColor: 'lightgrey', padding: '0.5em' }}>
+          <div style={{ backgroundColor: 'lightgrey', padding: '0.5em', gridColumn: '1', overflow: 'hidden' }}>
             <h3><strong>{state.components[componentBeingEdited].config.name}</strong></h3>
             <button 
               className='mb-2 me-2'
@@ -299,50 +312,48 @@ function App() {
                     flexDirection: 'column',
                   }}>
                     <h6><strong>{p}:</strong></h6>
-                    <div style={{ display: 'flex' }}>
-                      <label>Parent: </label>
-                      <SelectControl
-                        value={cssProps.parent[p].value}
-                        options={cssProps.parent[p].options}
-                        setter={(value: string) => {
-                          setState(prev =>
-                            produce(prev, draft => {
-                              draft.components[componentBeingEdited].config.css = {
-                                ...cssProps,
-                                parent: {
-                                  ...cssProps.parent,
-                                  [p]: {
-                                    ...cssProps.parent[p],
-                                    value,
-                                  }
+                    <label>Parent: </label>
+                    <SelectControl
+                      value={cssProps.parent[p].value}
+                      options={cssProps.parent[p].options}
+                      setter={(value: string) => {
+                        setState(prev =>
+                          produce(prev, draft => {
+                            draft.components[componentBeingEdited].config.css = {
+                              ...cssProps,
+                              parent: {
+                                ...cssProps.parent,
+                                [p]: {
+                                  ...cssProps.parent[p],
+                                  value,
                                 }
-                              };
-                            })
-                          );
-                        }}
-                      />
-                      <label className='ms-4'>Child: </label>
-                      <SelectControl
-                        value={cssProps.child[p].value}
-                        options={cssProps.child[p].options}
-                        setter={(value: string) => {
-                          setState(prev =>
-                            produce(prev, draft => {
-                              draft.components[componentBeingEdited].config.css = {
-                                ...cssProps,
-                                child: {
-                                  ...cssProps.child,
-                                  [p]: {
-                                    ...cssProps.child[p],
-                                    value,
-                                  }
+                              }
+                            };
+                          })
+                        );
+                      }}
+                    />
+                    <label>Child: </label>
+                    <SelectControl
+                      value={cssProps.child[p].value}
+                      options={cssProps.child[p].options}
+                      setter={(value: string) => {
+                        setState(prev =>
+                          produce(prev, draft => {
+                            draft.components[componentBeingEdited].config.css = {
+                              ...cssProps,
+                              child: {
+                                ...cssProps.child,
+                                [p]: {
+                                  ...cssProps.child[p],
+                                  value,
                                 }
-                              };
-                            })
-                          );
-                        }}
-                      />
-                    </div>
+                              }
+                            };
+                          })
+                        );
+                      }}
+                    />
                   </div>
                 })}
               </div>
@@ -387,11 +398,19 @@ function App() {
           </div>
           <div
             style={{
-              backgroundColor: 'white',
+              ...Object.fromEntries(
+                Object.entries(state.components['root'].config.css.parent).map(([key, val]) => [key, (val as any).value])
+              ),
               display: 'grid',
-              gridTemplateColumns: 'repeat(12, 1fr)'
+              gridTemplateColumns: 'repeat(12, 1fr)',
             }}>
               {Object.keys(state.components).map((k: string) => {
+                console.log(state.components['root'].config.css.parent);
+                
+                if (k === 'root') {
+                  return;
+                }
+
                 const Component = state.components[k].config.component;
                 const controls = state.components[k].config.controls;
                 const style: { [key:string]: string } = {};

@@ -14,7 +14,7 @@ function SelectControl({
                 value={value}
             >
                 {options.map((o: string, i: number) => {
-                    return <option key={o+i} value={o}>{o}</option>;
+                    return <option key={o+i} value={o}>{o.slice(-10)}</option>;
                 })}
             </select>
         </div>
